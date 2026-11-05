@@ -1,7 +1,7 @@
-package Controller;
+package controller;
 
-import Business.ClienteBusiness;
-import Model.Cliente;
+import business.ClienteBusiness;
+import model.Cliente;
 import java.util.List;
 
 public class ClienteController {

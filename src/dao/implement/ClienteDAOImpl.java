@@ -1,22 +1,18 @@
-package Dao;
+package dao.implement;
 
-import Model.Cliente;
+import dao.interfaces.ClienteDao;
+import model.Cliente;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClienteDAOImpl {
-    private Connection con;
+public class ClienteDAOImpl implements ClienteDao {
 
-    public ClienteDAOImpl(Connection con) {
-        this.con = con;
-    }
-
-    // Usa el índice idx_cliente_doc
-    public Cliente buscarPorDocumento(String documento) {
-        String sql = "SELECT id, documento, nombre, telefono, email FROM cliente WHERE documento = ?";
+    @Override
+    public Cliente buscarPorDocumento(Connection con, String documento) {
+        String sql = "SELECT documento, nombre_razon_social, telefono FROM clientes WHERE documento = ?";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, documento);
             try (ResultSet rs = ps.executeQuery()) {
@@ -30,11 +26,11 @@ public class ClienteDAOImpl {
         return null;
     }
 
-    // Búsqueda parcial por nombre con sanitización de comodines
-    public List<Cliente> buscarPorNombre(String texto) {
+    @Override
+    public List<Cliente> buscarPorNombre(Connection con, String texto) {
         List<Cliente> lista = new ArrayList<>();
-        String sql = "SELECT id, documento, nombre, telefono, email FROM cliente "
-                + "WHERE nombre LIKE ? ESCAPE '\\\\'";
+        if (texto == null || texto.trim().isEmpty()) return lista;
+        String sql = "SELECT documento, nombre_razon_social, telefono FROM clientes WHERE nombre_razon_social LIKE ? ESCAPE '\\\\'";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, "%" + escaparComodines(texto) + "%");
             try (ResultSet rs = ps.executeQuery()) {
@@ -48,9 +44,10 @@ public class ClienteDAOImpl {
         return lista;
     }
 
-    public List<Cliente> listarClientes() {
+    @Override
+    public List<Cliente> listarClientes(Connection con) {
         List<Cliente> lista = new ArrayList<>();
-        String sql = "SELECT id, documento, nombre, telefono, email FROM cliente";
+        String sql = "SELECT documento, nombre_razon_social, telefono FROM clientes";
         try (PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -62,13 +59,13 @@ public class ClienteDAOImpl {
         return lista;
     }
 
-    public boolean registrar(Cliente c) {
-        String sql = "INSERT INTO cliente (documento, nombre, telefono, email) VALUES (?, ?, ?, ?)";
+    @Override
+    public boolean registrar(Connection con, Cliente c) {
+        String sql = "INSERT INTO clientes (documento, nombre_razon_social, telefono) VALUES (?, ?, ?)";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, c.getDocumento());
-            ps.setString(2, c.getNombre());
+            ps.setString(2, c.getNombreRazonSocial());
             ps.setString(3, c.getTelefono());
-            ps.setString(4, c.getEmail());
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
             System.out.println("Error al registrar cliente: " + e.getMessage());
@@ -76,20 +73,15 @@ public class ClienteDAOImpl {
         }
     }
 
-    // Escapa \ primero, luego % y _
     private String escaparComodines(String texto) {
-        return texto.replace("\\", "\\\\")
-                .replace("%", "\\%")
-                .replace("_", "\\_");
+        return texto.replace("\\\\", "\\\\\\\\").replace("%", "\\\\%").replace("_", "\\\\_");
     }
 
     private Cliente mapear(ResultSet rs) throws Exception {
         return new Cliente(
-                rs.getInt("id"),
                 rs.getString("documento"),
-                rs.getString("nombre"),
-                rs.getString("telefono"),
-                rs.getString("email")
+                rs.getString("nombre_razon_social"),
+                rs.getString("telefono")
         );
     }
 }

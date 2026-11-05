@@ -1,7 +1,9 @@
-package Business;
+package business;
 
-import Dao.ClienteDao;
-import Model.Cliente;
+import dao.interfaces.ClienteDao;
+import model.Cliente;
+import service.Conexion;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,7 +19,12 @@ public class ClienteBusiness {
             System.out.println("El documento no puede estar vacío.");
             return null;
         }
-        return dao.buscarPorDocumento(documento.trim());
+        try (Connection con = Conexion.getConnection()) {
+            return dao.buscarPorDocumento(con, documento.trim());
+        } catch (Exception e) {
+            System.out.println("Error de conexion: " + e.getMessage());
+            return null;
+        }
     }
 
     public List<Cliente> buscarPorNombre(String texto) {
@@ -25,23 +32,38 @@ public class ClienteBusiness {
             System.out.println("Ingrese un texto para buscar.");
             return new ArrayList<>();
         }
-        return dao.buscarPorNombre(texto.trim());
+        try (Connection con = Conexion.getConnection()) {
+            return dao.buscarPorNombre(con, texto.trim());
+        } catch (Exception e) {
+            System.out.println("Error de conexion: " + e.getMessage());
+            return new ArrayList<>();
+        }
     }
 
     public boolean registrar(Cliente c) {
         if (c.getDocumento() == null || c.getDocumento().trim().isEmpty()
-                || c.getNombre() == null || c.getNombre().trim().isEmpty()) {
+                || c.getNombreRazonSocial() == null || c.getNombreRazonSocial().trim().isEmpty()) {
             System.out.println("Documento y nombre son obligatorios.");
             return false;
         }
-        if (dao.buscarPorDocumento(c.getDocumento().trim()) != null) {
-            System.out.println("Ya existe un cliente con ese documento.");
+        try (Connection con = Conexion.getConnection()) {
+            if (dao.buscarPorDocumento(con, c.getDocumento().trim()) != null) {
+                System.out.println("Ya existe un cliente con ese documento.");
+                return false;
+            }
+            return dao.registrar(con, c);
+        } catch (Exception e) {
+            System.out.println("Error de conexion: " + e.getMessage());
             return false;
         }
-        return dao.registrar(c);
     }
 
     public List<Cliente> listar() {
-        return dao.listarClientes();
+        try (Connection con = Conexion.getConnection()) {
+            return dao.listarClientes(con);
+        } catch (Exception e) {
+            System.out.println("Error de conexion: " + e.getMessage());
+            return new ArrayList<>();
+        }
     }
 }

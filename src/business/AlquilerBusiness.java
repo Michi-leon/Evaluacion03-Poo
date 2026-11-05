@@ -3,9 +3,9 @@ package business;
 import model.Alquiler;
 import model.Equipo;
 import dao.interfaces.AlquilerDAO;
-import dao.interfaces.EquipoDAO;
-import dao.impl.AlquilerDAOImpl;
-import dao.impl.EquipoDAOImpl;
+import dao.interfaces.EquipoDao;
+import dao.implement.AlquilerDAOImpl;
+import dao.implement.EquipoDaoImpl;
 import service.Conexion;
 
 import java.sql.Connection;
@@ -13,7 +13,7 @@ import java.sql.SQLException;
 
 public class AlquilerBusiness {
     private final AlquilerDAO alquilerDAO = new AlquilerDAOImpl();
-    private final EquipoDAO equipoDAO = new EquipoDAOImpl();
+    private final EquipoDao equipoDAO = new EquipoDaoImpl();
 
     public boolean registrarAlquiler(Alquiler alquiler) {
         Connection con = null;
@@ -23,27 +23,26 @@ public class AlquilerBusiness {
 
             Equipo equipo = equipoDAO.buscarPorCodigo(con, alquiler.getEquipo().getCodigo());
             if (equipo == null) {
-                throw new SQLException("EL EQUIPO CON CODIGO" + alquiler.getEquipo().getCodigo() + "NO EXISTE");
+                throw new SQLException("El equipo especificado no existe.");
             }
             if (!equipo.isDisponible()) {
-                throw new SQLException("EQUIPO NO DISPONIBLE.");
+                throw new SQLException("El equipo no esta disponible para alquiler.");
             }
 
             alquilerDAO.registrarAlquiler(con, alquiler);
-
-            equipoDAO.actualizarEstadoDisponibilidad(con, equipo.getCodigo(), false);
+            equipoDAO.cambiarDisponibilidad(con, equipo.getCodigo(), false);
 
             con.commit();
-            System.out.println("ALQUILER REGISTRADO EQUIPO BLOQUEADO EXITOSAMENTE");
+            System.out.println("Alquiler registrado exitosamente. Equipo reservado.");
             return true;
 
         } catch (SQLException e) {
             if (con != null) {
                 try {
                     con.rollback();
-                    System.err.println("TRANSACCION REVERTIDA - ROLLBACK OCURRIO UN ERROR : " + e.getMessage());
+                    System.err.println("Transaccion revertida (Rollback). Error: " + e.getMessage());
                 } catch (SQLException ex) {
-                    System.err.println("ERROR AL REALIZAR ROLLBACK" + ex.getMessage());
+                    System.err.println("Error en rollback: " + ex.getMessage());
                 }
             }
             return false;
@@ -53,7 +52,7 @@ public class AlquilerBusiness {
                     con.setAutoCommit(true);
                     con.close();
                 } catch (SQLException e) {
-                    System.err.println("ERROR DE CONEXION " + e.getMessage());
+                    System.err.println("Error al cerrar conexion: " + e.getMessage());
                 }
             }
         }
@@ -65,23 +64,20 @@ public class AlquilerBusiness {
             con = Conexion.getConnection();
             con.setAutoCommit(false);
 
-            
             alquilerDAO.marcarComoDevuelto(con, idAlquiler);
-
-            
-            equipoDAO.actualizarEstadoDisponibilidad(con, codigoEquipo, true);
+            equipoDAO.cambiarDisponibilidad(con, codigoEquipo, true);
 
             con.commit(); 
-            System.out.println("DEVOLUCION PROCESADA EQUIPO LIBERADO");
+            System.out.println("Devolucion procesada exitosamente. Equipo liberado.");
             return true;
 
         } catch (SQLException e) {
             if (con != null) {
                 try {
                     con.rollback();
-                    System.err.println("TRANSACCION REVERTIDA ERROR EN DEVOLUCION " + e.getMessage());
+                    System.err.println("Transaccion revertida en devolucion: " + e.getMessage());
                 } catch (SQLException ex) {
-                    System.err.println("ERROR EN EL ROLLBACK " + ex.getMessage());
+                    System.err.println("Error en rollback: " + ex.getMessage());
                 }
             }
             return false;
@@ -91,7 +87,7 @@ public class AlquilerBusiness {
                     con.setAutoCommit(true);
                     con.close();
                 } catch (SQLException e) {
-                    System.err.println("ERROR DE CONEXION" + e.getMessage());
+                    System.err.println("Error al cerrar conexion: " + e.getMessage());
                 }
             }
         }
