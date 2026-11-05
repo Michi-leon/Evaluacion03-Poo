@@ -2,7 +2,7 @@ package business;
 
 import model.Alquiler;
 import model.Equipo;
-import dao.interfaces.AlquilerDAO;
+import dao.interfaces.AlquilerDao;
 import dao.interfaces.EquipoDao;
 import dao.implement.AlquilerDAOImpl;
 import dao.implement.EquipoDaoImpl;
@@ -12,7 +12,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public class AlquilerBusiness {
-    private final AlquilerDAO alquilerDAO = new AlquilerDAOImpl();
+    private final AlquilerDao alquilerDAO = new AlquilerDAOImpl();
     private final EquipoDao equipoDAO = new EquipoDaoImpl();
 
     public boolean registrarAlquiler(Alquiler alquiler) {
